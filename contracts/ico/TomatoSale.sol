@@ -2,28 +2,54 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "../token/Tomato.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract TomatoSale is OwnableUpgradeable, Tomato {
+// To fix this error: TypeError: Member "mint" not found or not visible after argument-dependent lookup in contract IERC20.
+interface IERC20TomatoCoin is IERC20 {
+    function mint(address _to, uint256 _amount) external;
+}
+
+contract TomatoSale is Initializable, OwnableUpgradeable {
+
+    enum PHASE {
+        SEED,
+        GENERAL,
+        OPEN
+    }
 
     event Contribution(address owner, uint etherAmount);
     event Redeem(address owner, uint noOfTomatoCoins);
+    event TomatoSalePaused();
+    event TomatoSaleResumed();
 
     mapping(address => bool) whitelistedAddresses;
     mapping(address => uint) etherContributions;
 
+    uint constant EXCHANGE_RATE = 5;
     uint constant GOAL = 30000 ether;
     uint constant PHASE_SEED_MAX_CONTRIBUTION_LIMIT = 15000 ether;
     uint constant PHASE_SEED_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT = 1500 ether;
     uint constant PHASE_GENERAL_MAX_CONTRIBUTION_LIMIT = GOAL;
     uint constant PHASE_GENERAL_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT = 1000 ether;
 
-    Tomato public tomatoToken;
+    IERC20TomatoCoin private tomatoCoin;
     uint private totalEtherRaised;
+    PHASE public phase;
+    bool public fundRaisingEnabled;
 
-    constructor() {
+    // Error: Contract `TomatoSale` is not upgrade safe
+    // contracts/ico/TomatoSale.sol:24: Contract `TomatoSale` has a constructor. Define an initializer instead
+
+    // To fix above issue, commented out constructor and added initializer
+    // constructor() {
+    //     phase = PHASE.SEED;
+    //     admin = msg.sender;
+    // }
+    function initialize(address _tomatoCoin) public initializer {
+        __Ownable_init();
         phase = PHASE.SEED;
-        admin = msg.sender;
+        tomatoCoin = IERC20TomatoCoin(_tomatoCoin);
     }
 
     function addAddressToWhitelist(address whitelistAddress) external onlyOwner {
@@ -49,18 +75,9 @@ contract TomatoSale is OwnableUpgradeable, Tomato {
 
         etherContributions[msg.sender] = 0;
 
-        mint(msg.sender, etherContributions[msg.sender] * 5);
+        tomatoCoin.mint(msg.sender, etherContributions[msg.sender] * EXCHANGE_RATE);
 
-        emit Redeem(msg.sender, etherContributions[msg.sender] * 5);
-    }
-
-    function toggleTaxOnTxn() external onlyOwner {
-        taxEnabled = !taxEnabled;
-        if (taxEnabled) {
-            emit TomatoSaleTaxEnabled();
-        } else {
-            emit TomatoSaleTaxDisabled();
-        }
+        emit Redeem(msg.sender, etherContributions[msg.sender] * EXCHANGE_RATE);
     }
 
     function toggleFundRaising() external onlyOwner {
@@ -86,13 +103,17 @@ contract TomatoSale is OwnableUpgradeable, Tomato {
             require(tokenSupply <= PHASE_GENERAL_MAX_CONTRIBUTION_LIMIT);
             require(callerBalance <= PHASE_GENERAL_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT, "Individual contributon cannot be greater than 1000 ether");
         } else if (phase == PHASE.OPEN) {
-            require(tokenSupply <= TOTAL_SUPPLY, "No tomato coins are available");
+            require(tokenSupply <= 500000, "No tomato coins are available");
         }
 
         etherContributions[msg.sender] += msg.value;
         totalEtherRaised += msg.value;
 
         emit Contribution(msg.sender, msg.value);
+    }
+
+    function getPhase() public view returns (PHASE) {
+        return phase;
     }
     
 }
