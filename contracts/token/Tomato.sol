@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract Tomato is ERC20, Ownable {
+contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 
     // events
     event TomatoSalePaused();
@@ -28,6 +29,8 @@ contract Tomato is ERC20, Ownable {
     uint constant TAX_RATE = (2 / 100) * 10 ** 18;
     address private tomatoSaleAddress;
     address private treasuryAddress;
+    bool public taxEnabled;
+    bool public fundRaisingEnabled;
 
     // variables
     PHASE public phase;
@@ -43,15 +46,23 @@ contract Tomato is ERC20, Ownable {
         _;
     }
 
-    constructor(address _treasuryAddress) ERC20(TOKEN_NAME, TOKEN_SYMBOL) {
-        admin = msg.sender;
-        treasuryAddress = _treasuryAddress;
-        mint(_treasuryAddress, INITIAL_SUPPLY);
+    // constructor(address _treasuryAddress) ERC20(TOKEN_NAME, TOKEN_SYMBOL) {
+    //     admin = msg.sender;
+    //     treasuryAddress = _treasuryAddress;
+    //     mint(_treasuryAddress, INITIAL_SUPPLY);
+    // }
+
+    function initialize(address _treasuryAddress) public initializer {
+      __ERC20_init(TOKEN_NAME, TOKEN_SYMBOL);
+      __Ownable_init();
+      admin = msg.sender;
+      treasuryAddress = _treasuryAddress;
+      mint(_treasuryAddress, INITIAL_SUPPLY);
     }
 
     function mint(address _account, uint _amount) internal onlyTomatoSale {
         require((totalSupply() + _amount) <= TOTAL_SUPPLY);
-        _mint(_account, _amount);
+        super._mint(_account, _amount);
     }
 
     function setTreauryAddress(address _treasuryAddress) external onlyOwner {
@@ -62,6 +73,18 @@ contract Tomato is ERC20, Ownable {
     function setTomatoSaleAddress(address _tomatoSaleAddress) external onlyOwner {
         require(_tomatoSaleAddress != address(0));
         tomatoSaleAddress = _tomatoSaleAddress;
+    }
+
+    function transferCoins(address _from, address _to, uint256 value) internal onlyTomatoSale {
+        uint tax = calculateTax(value);
+        if (taxEnabled) {
+            super._transfer(_from, treasuryAddress, tax);
+        }
+        super._transfer(_from, _to, taxEnabled ? value - tax : value);
+    }
+
+    function calculateTax(uint _amount) private pure returns(uint) {
+        return TAX_RATE * _amount;
     }
 
 }

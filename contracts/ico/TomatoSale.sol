@@ -1,13 +1,13 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../token/Tomato.sol";
 
-contract TomatoSale is Ownable, Tomato {
+contract TomatoSale is OwnableUpgradeable, Tomato {
 
     event Contribution(address owner, uint etherAmount);
-    event ReleaseTokens(address owner, uint etherAmount);
+    event Redeem(address owner, uint noOfTomatoCoins);
 
     mapping(address => bool) whitelistedAddresses;
     mapping(address => uint) etherContributions;
@@ -20,8 +20,6 @@ contract TomatoSale is Ownable, Tomato {
 
     Tomato public tomatoToken;
     uint private totalEtherRaised;
-    bool public taxEnabled;
-    bool public fundRaisingEnabled;
 
     constructor() {
         phase = PHASE.SEED;
@@ -37,12 +35,23 @@ contract TomatoSale is Ownable, Tomato {
     }
 
     function movePhaseForward() external onlyOwner {
+        require(phase != PHASE.OPEN);
         if (phase == PHASE.SEED) {
             phase = PHASE.GENERAL;
         } else if (phase == PHASE.GENERAL) {
             phase = PHASE.OPEN;
-            transferTomatoTokens();
         }
+    }
+
+    function redeemTomatoTokens() external payable {
+        require(phase != PHASE.OPEN);
+        require(etherContributions[msg.sender] > 0);
+
+        etherContributions[msg.sender] = 0;
+
+        mint(msg.sender, etherContributions[msg.sender] * 5);
+
+        emit Redeem(msg.sender, etherContributions[msg.sender] * 5);
     }
 
     function toggleTaxOnTxn() external onlyOwner {
@@ -80,27 +89,10 @@ contract TomatoSale is Ownable, Tomato {
             require(tokenSupply <= TOTAL_SUPPLY, "No tomato coins are available");
         }
 
-        uint etherAmount = msg.value;
-        // Note: Need to check with Gilbert when to apply tax
-        if (taxEnabled) {
-            etherAmount -= calculateTax(etherAmount);
-        }
+        etherContributions[msg.sender] += msg.value;
+        totalEtherRaised += msg.value;
 
-        mint(msg.sender, ((etherAmount / 5) * 10 ** 18));
-
-        etherContributions[msg.sender] += etherAmount;
-        totalEtherRaised += etherAmount;
-
-        emit Contribution(msg.sender, etherAmount);
-    }
-
-    function calculateTax(uint _amount) private pure returns(uint) {
-        return TAX_RATE * _amount;
-    }
-
-    function transferTomatoTokens() private view {
-        require(phase == PHASE.OPEN);
-        // TODO: Logic to transfer tokens
+        emit Contribution(msg.sender, msg.value);
     }
     
 }
