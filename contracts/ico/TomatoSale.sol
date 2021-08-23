@@ -38,14 +38,13 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
     PHASE public phase;
     bool public fundRaisingEnabled;
 
-    // Error: Contract `TomatoSale` is not upgrade safe
-    // contracts/ico/TomatoSale.sol:24: Contract `TomatoSale` has a constructor. Define an initializer instead
-
+    // Error: Contract `TomatoSale` is not upgrade safe contracts/ico/TomatoSale.sol:24: Contract `TomatoSale` has a constructor. Define an initializer instead
     // To fix above issue, commented out constructor and added initializer
     // constructor() {
     //     phase = PHASE.SEED;
     //     admin = msg.sender;
     // }
+
     function initialize(address _tomatoCoin) public initializer {
         __Ownable_init();
         phase = PHASE.SEED;
@@ -73,11 +72,12 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
         require(phase != PHASE.OPEN);
         require(etherContributions[msg.sender] > 0);
 
+        uint amount = etherContributions[msg.sender];
         etherContributions[msg.sender] = 0;
 
-        tomatoCoin.mint(msg.sender, etherContributions[msg.sender] * EXCHANGE_RATE);
+        tomatoCoin.mint(msg.sender, amount * EXCHANGE_RATE);
 
-        emit Redeem(msg.sender, etherContributions[msg.sender] * EXCHANGE_RATE);
+        emit Redeem(msg.sender, amount * EXCHANGE_RATE);
     }
 
     function toggleFundRaising() external onlyOwner {
