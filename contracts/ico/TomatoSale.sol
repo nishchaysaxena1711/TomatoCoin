@@ -34,7 +34,7 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
     uint constant PHASE_GENERAL_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT = 1000 ether;
 
     IERC20TomatoCoin private tomatoCoin;
-    uint private totalEtherRaised;
+    uint public totalEtherRaised;
     PHASE public phase;
     bool public fundRaisingEnabled;
 
@@ -91,6 +91,7 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
 
     function buyTomatoTokens() public payable {
         require(fundRaisingEnabled == true, "Tomato token sale must be active");
+        require(msg.value > 0, "Contribution should be greater than 0");
 
         uint tokenSupply = totalEtherRaised;
         uint callerBalance = etherContributions[msg.sender];
@@ -110,10 +111,6 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
         totalEtherRaised += msg.value;
 
         emit Contribution(msg.sender, msg.value);
-    }
-
-    function getPhase() public view returns (PHASE) {
-        return phase;
     }
     
 }
