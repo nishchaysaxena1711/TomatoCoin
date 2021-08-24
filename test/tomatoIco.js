@@ -1,13 +1,13 @@
 const { expect } = require("chai");
 const { ethers, upgrades } = require("hardhat");
-const { utils: { parseEther } } = ethers;
+const { utils: { parseEther }, BigNumber } = ethers;
 
 describe("TomatoICO", function () {
     let _TomatoIco, tomatoIco, _TomatoCoin, tomatoCoin;
-    let treasury, owner, c1, c2;
+    let treasury, owner, c1, c2, c3;
 
     beforeEach(async function () {
-        [treasury, owner, c1, c2] = await ethers.getSigners();
+        [treasury, owner, c1, c2, c3] = await ethers.getSigners();
         
         _TomatoIco = await ethers.getContractFactory('TomatoSale');
         _TomatoCoin = await ethers.getContractFactory('Tomato');
@@ -104,6 +104,72 @@ describe("TomatoICO", function () {
 
         expect(await tomatoCoin.balanceOf(c1.address)).to.eq("0"); // not minted yet
         expect(await tomatoIco.totalEtherRaised()).to.eq("10");
+    });
+
+    it("should allow contribution to max limit in seed and general phases", async function() {
+        await tomatoIco.toggleFundRaising(); // fundraising enabled
+        expect(await tomatoIco.phase()).to.eq(0); // SEED
+
+        await tomatoIco.addAddressToWhitelist(c1.address);
+        await tomatoIco.addAddressToWhitelist(c2.address);
+
+        await tomatoIco.connect(c1).buyTomatoTokens({ value: 1600 });
+        expect(await tomatoIco.totalEtherRaised()).to.eq("1500");
+
+        await tomatoIco.connect(c1).buyTomatoTokens({ value: 1400 });
+        expect(await tomatoIco.totalEtherRaised()).to.eq("2900");
+
+        try {
+            await tomatoIco.connect(c1).buyTomatoTokens({ value: 1600 });
+        } catch (err) {
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Individual contributon cannot be greater than 1500 ether'");
+        }
+
+        await tomatoIco.movePhaseForward();
+        expect(await tomatoIco.phase()).to.eq(1); // GENERAL
+
+        await tomatoIco.connect(c3).buyTomatoTokens({ value: 1600 });
+        expect(await tomatoIco.totalEtherRaised()).to.eq("3900");
+
+        try {
+            await tomatoIco.connect(c1).buyTomatoTokens({ value: 1600 });
+        } catch (err) {
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Individual contributon cannot be greater than 1000 ether'");
+        }
+    });
+
+    it("should allow users to redeeem only in Open phase", async function() {
+        await tomatoIco.toggleFundRaising(); // fundraising enabled
+        expect(await tomatoIco.phase()).to.eq(0); // SEED
+
+        try {
+            await tomatoIco.connect(c1).redeemTomatoTokens();
+        } catch (err) {
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Reedemption availale in Open Phase'");
+        }
+
+        await tomatoIco.movePhaseForward();
+
+        try {
+            await tomatoIco.connect(c2).redeemTomatoTokens();
+        } catch (err) {
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Reedemption availale in Open Phase'");
+        }
+
+        await tomatoIco.movePhaseForward();
+
+        try {
+            await tomatoIco.connect(c2).redeemTomatoTokens();
+        } catch (err) {
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'You do not enough coins for redemption'");
+        }
+
+        await tomatoIco.connect(c1).buyTomatoTokens({ value: 1600 });
+        expect(await tomatoCoin.balanceOf(c1.address)).to.eq("0"); // not minted yet
+
+        await tomatoIco.connect(c1).redeemTomatoTokens();
+        expect(await tomatoCoin.balanceOf(c1.address)).to.eq("8000");
+
     });
 
 });

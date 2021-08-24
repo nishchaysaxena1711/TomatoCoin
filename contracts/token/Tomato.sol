@@ -14,16 +14,10 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     string constant TOKEN_SYMBOL = "TMT";
     uint constant TOTAL_SUPPLY = 500000;
     uint constant INITIAL_SUPPLY = (TOTAL_SUPPLY / 10);
-    uint constant TAX_RATE = (2 / 100) * 10 ** 18;
-    
-    address private tomatoSaleAddress;
-    address private treasuryAddress;
-    bool public taxEnabled;
+    uint constant TAX_RATE = 2;
 
-    modifier onlyTomatoSale {
-        require(msg.sender == tomatoSaleAddress);
-        _;
-    }
+    address public treasuryAddress;
+    bool public taxEnabled;
 
     // constructor(address _treasuryAddress) ERC20(TOKEN_NAME, TOKEN_SYMBOL) {
     //     treasuryAddress = _treasuryAddress;
@@ -47,11 +41,6 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         treasuryAddress = _treasuryAddress;
     }
 
-    function setTomatoSaleAddress(address _tomatoSaleAddress) external onlyOwner {
-        require(_tomatoSaleAddress != address(0));
-        tomatoSaleAddress = _tomatoSaleAddress;
-    }
-
     function _transfer(address _from, address _to, uint256 value) internal override {
         uint tax = calculateTax(value);
         if (taxEnabled) {
@@ -61,7 +50,7 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     }
 
     function calculateTax(uint _amount) private pure returns(uint) {
-        return TAX_RATE * _amount;
+        return TAX_RATE * _amount / 100;
     }
 
     function toggleTax() external onlyOwner {

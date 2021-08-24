@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 // To fix this error: TypeError: Member "mint" not found or not visible after argument-dependent lookup in contract IERC20.
 interface IERC20TomatoCoin is IERC20 {
@@ -69,8 +70,8 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
     }
 
     function redeemTomatoTokens() external payable {
-        require(phase != PHASE.OPEN);
-        require(etherContributions[msg.sender] > 0);
+        require(phase == PHASE.OPEN, "Reedemption availale in Open Phase");
+        require(etherContributions[msg.sender] > 0, "You do not enough coins for redemption");
 
         uint amount = etherContributions[msg.sender];
         etherContributions[msg.sender] = 0;
@@ -89,28 +90,40 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
         }
     }
 
-    function buyTomatoTokens() public payable {
+    function buyTomatoTokens() external payable {
         require(fundRaisingEnabled == true, "Tomato token sale must be active");
         require(msg.value > 0, "Contribution should be greater than 0");
 
         uint tokenSupply = totalEtherRaised;
         uint callerBalance = etherContributions[msg.sender];
+        uint remainingBalance;
+        uint amount = msg.value;
 
         if (phase == PHASE.SEED) {
             require(tokenSupply <= PHASE_SEED_MAX_CONTRIBUTION_LIMIT);
             require(whitelistedAddresses[msg.sender] == true, "Address is not whitelisted for sale in seed phase");
-            require(callerBalance <= PHASE_SEED_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT, "Individual contributon cannot be greater than 1500 ether");
+            require(callerBalance <= (PHASE_SEED_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT / 10 ** 18), "Individual contributon cannot be greater than 1500 ether");
+
+            remainingBalance = (PHASE_SEED_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT - callerBalance) / 10 ** 18;
+            if (amount > remainingBalance) {
+                amount = remainingBalance;
+            }
         } else if (phase == PHASE.GENERAL) {
             require(tokenSupply <= PHASE_GENERAL_MAX_CONTRIBUTION_LIMIT);
-            require(callerBalance <= PHASE_GENERAL_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT, "Individual contributon cannot be greater than 1000 ether");
+            require(callerBalance <= (PHASE_GENERAL_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT / 10 ** 18), "Individual contributon cannot be greater than 1000 ether");
+
+            remainingBalance = (PHASE_GENERAL_MAX_INDIVIDUAL_CONTRIBUTION_LIMIT - callerBalance) / 10 ** 18;
+            if (amount > remainingBalance) {
+                amount = remainingBalance;
+            }
         } else if (phase == PHASE.OPEN) {
             require(tokenSupply <= 500000, "No tomato coins are available");
         }
 
-        etherContributions[msg.sender] += msg.value;
-        totalEtherRaised += msg.value;
+        etherContributions[msg.sender] += amount;
+        totalEtherRaised += amount;
 
-        emit Contribution(msg.sender, msg.value);
+        emit Contribution(msg.sender, amount);
     }
     
 }
