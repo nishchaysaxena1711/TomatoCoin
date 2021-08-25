@@ -7,8 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 
-    event TomatoIcoTaxEnabled();
-    event TomatoIcoTaxDisabled();
+    event TomatoIcoTaxStatus(bool isTaxEnaled);
 
     string constant TOKEN_NAME = "Tomato";
     string constant TOKEN_SYMBOL = "TMT";
@@ -16,6 +15,7 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     uint constant INITIAL_SUPPLY = (TOTAL_SUPPLY / 10);
     uint constant TAX_RATE = 2;
 
+    address public tomatoIcoAddress;
     address public treasuryAddress;
     bool public taxEnabled;
 
@@ -31,7 +31,17 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         super._mint(_treasuryAddress, INITIAL_SUPPLY);
     }
 
-    function mint(address _account, uint _amount) external {
+    modifier onlyTomatoIco {
+        require(msg.sender == tomatoIcoAddress, "Unauthorized for minting");
+        _;
+    }
+
+    function setTomatoIcoAddress(address _tomatoIcoAddress) external onlyOwner {
+        require(_tomatoIcoAddress != address(0));
+        tomatoIcoAddress = _tomatoIcoAddress;
+    }
+
+    function mint(address _account, uint _amount) external onlyTomatoIco {
         require((totalSupply() + _amount) <= TOTAL_SUPPLY);
         super._mint(_account, _amount);
     }
@@ -55,11 +65,7 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 
     function toggleTax() external onlyOwner {
         taxEnabled = !taxEnabled;
-        if (taxEnabled) {
-            emit TomatoIcoTaxEnabled();
-        } else {
-            emit TomatoIcoTaxDisabled();
-        }
+        emit TomatoIcoTaxStatus(taxEnabled);
     }
 
 }

@@ -4,15 +4,17 @@ const { utils: { parseEther }, BigNumber } = ethers;
 
 describe("TomatoCoin", function () {
     let _TomatoCoin, tomatoCoin;
-    let treasury, owner, c1, c2, c3, treasury2;
+    let treasury, owner, c1, c2, c3, treasury2, tomatoIco;
 
     beforeEach(async function () {
-        [treasury, owner, c1, c2, c3, treasury2] = await ethers.getSigners();
+        [treasury, owner, c1, c2, c3, treasury2, tomatoIco] = await ethers.getSigners();
         
         _TomatoCoin = await ethers.getContractFactory('Tomato');
 
         tomatoCoin = await upgrades.deployProxy(_TomatoCoin, [treasury.address]);
         await tomatoCoin.deployed();
+
+        await tomatoCoin.setTomatoIcoAddress(tomatoIco.address);
     });
 
     it("should allow only owner can toggle tax", async function () {
@@ -47,8 +49,8 @@ describe("TomatoCoin", function () {
     it("should compute tax correctly", async function() {
         expect(await tomatoCoin.balanceOf(treasury.address)).to.deep.equal("50000");
 
-        await tomatoCoin.mint(c1.address, BigNumber.from(100));
-        await tomatoCoin.mint(c2.address, BigNumber.from(100));
+        await tomatoCoin.connect(tomatoIco).mint(c1.address, BigNumber.from(100));
+        await tomatoCoin.connect(tomatoIco).mint(c2.address, BigNumber.from(100));
         await tomatoCoin.connect(c2).transfer(c1.address, BigNumber.from(50));
 
         expect(await tomatoCoin.balanceOf(c1.address)).to.deep.equal(BigNumber.from(150));

@@ -17,6 +17,8 @@ describe("TomatoICO", function () {
 
         tomatoIco = await upgrades.deployProxy(_TomatoIco, [tomatoCoin.address]);
         await tomatoIco.deployed();
+
+        await tomatoCoin.setTomatoIcoAddress(tomatoIco.address);
     });
 
     it("should allow only owner can change phases", async function () {
@@ -51,7 +53,7 @@ describe("TomatoICO", function () {
         }
 
         await tomatoIco.toggleFundRaising();
-        await tomatoIco.addAddressToWhitelist(c1.address);
+        await tomatoIco.modifyWhitelistAddresses(c1.address, true);
         await tomatoIco.connect(c1).buyTomatoTokens({ value: 10 });
 
         expect(await tomatoIco.totalEtherRaised()).to.eq("10");
@@ -79,7 +81,7 @@ describe("TomatoICO", function () {
             expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Address is not whitelisted for sale in seed phase'");
         }
 
-        await tomatoIco.addAddressToWhitelist(c2.address);
+        await tomatoIco.modifyWhitelistAddresses(c2.address, true);
         await tomatoIco.connect(c2).buyTomatoTokens({ value: 10 });
 
         expect(await tomatoCoin.balanceOf(c1.address)).to.eq("0");
@@ -110,8 +112,8 @@ describe("TomatoICO", function () {
         await tomatoIco.toggleFundRaising(); // fundraising enabled
         expect(await tomatoIco.phase()).to.eq(0); // SEED
 
-        await tomatoIco.addAddressToWhitelist(c1.address);
-        await tomatoIco.addAddressToWhitelist(c2.address);
+        await tomatoIco.modifyWhitelistAddresses(c1.address, true);
+        await tomatoIco.modifyWhitelistAddresses(c2.address, true);
 
         await tomatoIco.connect(c1).buyTomatoTokens({ value: 1600 });
         expect(await tomatoIco.totalEtherRaised()).to.eq("1500");
@@ -145,7 +147,7 @@ describe("TomatoICO", function () {
         try {
             await tomatoIco.connect(c1).redeemTomatoTokens();
         } catch (err) {
-            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Reedemption availale in Open Phase'");
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Redemption available in Open Phase'");
         }
 
         await tomatoIco.movePhaseForward();
@@ -153,7 +155,7 @@ describe("TomatoICO", function () {
         try {
             await tomatoIco.connect(c2).redeemTomatoTokens();
         } catch (err) {
-            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Reedemption availale in Open Phase'");
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'Redemption available in Open Phase'");
         }
 
         await tomatoIco.movePhaseForward();
@@ -161,15 +163,14 @@ describe("TomatoICO", function () {
         try {
             await tomatoIco.connect(c2).redeemTomatoTokens();
         } catch (err) {
-            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'You do not enough coins for redemption'");
+            expect(err.message).to.deep.equal("VM Exception while processing transaction: reverted with reason string 'You do not have enough coins for redemption'");
         }
 
-        await tomatoIco.connect(c1).buyTomatoTokens({ value: 1600 });
+        await tomatoIco.connect(c1).buyTomatoTokens({ value: 16000 });
         expect(await tomatoCoin.balanceOf(c1.address)).to.eq("0"); // not minted yet
 
         await tomatoIco.connect(c1).redeemTomatoTokens();
-        expect(await tomatoCoin.balanceOf(c1.address)).to.eq("8000");
-
+        expect(await tomatoCoin.balanceOf(c1.address)).to.eq("80000");
     });
 
 });
