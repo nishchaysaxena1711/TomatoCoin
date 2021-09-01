@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import '../token/LiquidityPool.sol';
+import "hardhat/console.sol";
 
 contract EthTomatoPool is Initializable, OwnableUpgradeable {
 
@@ -26,20 +27,24 @@ contract EthTomatoPool is Initializable, OwnableUpgradeable {
     uint public tomatoBalance;
     uint public etherBalance;
 
-    function initialize(address _tomatoAddress, address _treasuryAddress, address _lpTokenAddress, address _etherAddress) public initializer onlyOwner {
-        require(_tomatoAddress != address(0));
+    function initialize(address _treasuryAddress, address _etherAddress) public initializer {
         require(_treasuryAddress != address(0));
-        require(_lpTokenAddress != address(0));
         require(_etherAddress != address(0));
 
         __Ownable_init();
-        tomatoAddress = _tomatoAddress;
         treasuryAddress = _treasuryAddress;
-        lpTokenAddress = _lpTokenAddress;
         etherAddress = _etherAddress;
+    }
+
+    function setLPTokenAddress(address _lpTokenAddress) external onlyOwner {
+        require(_lpTokenAddress != address(0));
+        lpTokenAddress = _lpTokenAddress;
         lpToken = LPToken(_lpTokenAddress);
-        sync();
-        lpToken.mint(address(this), calculateSquareRoot(INITIAL_TOMATO_COINS * INITIAL_ETHER) - MINIMUM_LIQUIDITY);
+    }
+
+    function setTomatoTokenAddress(address _tomatoAddress) external onlyOwner {
+        require(_tomatoAddress != address(0));
+        tomatoAddress = _tomatoAddress;
     }
 
     function sync() internal {
@@ -77,9 +82,14 @@ contract EthTomatoPool is Initializable, OwnableUpgradeable {
 
         sync();
         uint _totalSupply = lpToken.totalSupply();
-        uint tmt = _tomatoAmount * _totalSupply / tomatoBalance;
-        uint eth = _etherAmount * _totalSupply / etherBalance;
-        uint liquidity = Math.min(tmt, eth);
+        uint liquidity;
+        if (_totalSupply == 0) {
+            liquidity = calculateSquareRoot(INITIAL_TOMATO_COINS * INITIAL_ETHER) - MINIMUM_LIQUIDITY;
+        } else {
+            uint tmt = _tomatoAmount * _totalSupply / tomatoBalance;
+            uint eth = _etherAmount * _totalSupply / etherBalance;
+            liquidity = Math.min(tmt, eth);
+        }
         require(liquidity > 0);
         lpToken.mint(msg.sender, liquidity);
 

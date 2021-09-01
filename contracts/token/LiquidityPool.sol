@@ -19,10 +19,9 @@ contract LPToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         _;
     }
 
-    function initialize(address _tomatoLPAddress) public initializer {
+    function initialize() public initializer {
         __ERC20_init(LP_TOKEN_NAME, LP_TOKEN_SYMBOL);
         __Ownable_init();
-        tomatoLPAddress = _tomatoLPAddress;
     }
 
     function setTomatoLPAddress(address _tomatoLPAddress) external onlyOwner {

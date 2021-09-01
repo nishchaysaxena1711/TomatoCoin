@@ -4,14 +4,14 @@ const { utils: { parseEther }, BigNumber } = ethers;
 
 describe("TomatoCoin", function () {
     let _TomatoCoin, tomatoCoin;
-    let treasury, owner, c1, c2, c3, treasury2, tomatoIco;
+    let treasury, ethTmtLPool, owner, c1, c2, c3, treasury2, tomatoIco;
 
     beforeEach(async function () {
-        [treasury, owner, c1, c2, c3, treasury2, tomatoIco] = await ethers.getSigners();
+        [treasury, ethTmtLPool, owner, c1, c2, c3, treasury2, tomatoIco] = await ethers.getSigners();
         
         _TomatoCoin = await ethers.getContractFactory('Tomato');
 
-        tomatoCoin = await upgrades.deployProxy(_TomatoCoin, [treasury.address]);
+        tomatoCoin = await upgrades.deployProxy(_TomatoCoin, [treasury.address, ethTmtLPool.address]);
         await tomatoCoin.deployed();
 
         await tomatoCoin.setTomatoIcoAddress(tomatoIco.address);
