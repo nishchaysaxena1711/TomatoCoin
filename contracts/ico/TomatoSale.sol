@@ -3,14 +3,8 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "../token/Tomato.sol";
-
-// // To fix this error: TypeError: Member "mint" not found or not visible after argument-dependent lookup in contract IERC20.
-// interface IERC20TomatoCoin is IERC20 {
-//     function mint(address _to, uint256 _amount) external;
-// }
 
 contract TomatoSale is Initializable, OwnableUpgradeable {
 
@@ -38,13 +32,6 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
     uint public totalEtherRaised;
     PHASE public phase;
     bool public fundRaisingEnabled;
-
-    // Error: Contract `TomatoSale` is not upgrade safe contracts/ico/TomatoSale.sol:24: Contract `TomatoSale` has a constructor. Define an initializer instead
-    // To fix above issue, commented out constructor and added initializer
-    // constructor() {
-    //     phase = PHASE.SEED;
-    //     admin = msg.sender;
-    // }
 
     function initialize(address _tomatoCoin) public initializer {
         __Ownable_init();

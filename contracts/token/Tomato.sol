@@ -19,11 +19,6 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     address public treasuryAddress;
     bool public taxEnabled;
 
-    // constructor(address _treasuryAddress) ERC20(TOKEN_NAME, TOKEN_SYMBOL) {
-    //     treasuryAddress = _treasuryAddress;
-    //     mint(_treasuryAddress, INITIAL_SUPPLY);
-    // }
-
     function initialize(address _treasuryAddress) public initializer {
         __ERC20_init(TOKEN_NAME, TOKEN_SYMBOL);
         __Ownable_init();
