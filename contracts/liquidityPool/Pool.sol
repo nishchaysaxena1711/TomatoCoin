@@ -129,9 +129,17 @@ contract EthTomatoPool is Initializable, OwnableUpgradeable {
         
         sync();
 
-        uint transferAmtAfterFee = _tomatoAmount - (_tomatoAmount / 100); // 1% fee
+        uint k = etherBalance * tomatoBalance;
+        uint x = tomatoBalance + _tomatoAmount;
+        uint y = k / x;
+        uint ethAmt = ethBalance - y;
+        require(etherBalance > y);
+        uint expAmt = _tomatoAmount * etherBalance / tomatoBalance;
+
+        require(10 * (expAmt - ethAmt) / expAmt < 1, 'swap slippage is more than 10%');
+
+        uint transferAmtAfterFee = ethAmt - (ethAmt / 100); // 1% fee
         require(transferAmtAfterFee > 0);
-        require((transferAmtAfterFee / 10) > (tomatoBalance * etherBalance), 'swap slippage is more than 10%');
 
         bool isEthTransfered = IERC20(etherAddress).transfer(msg.sender, transferAmtAfterFee);
         require(isEthTransfered == true, 'swapTomatoToEth: ether transfer transaction unsuccessful');
@@ -149,9 +157,17 @@ contract EthTomatoPool is Initializable, OwnableUpgradeable {
         
         sync();
 
-        uint transferAmtAfterFee = _etherAmount - (_etherAmount / 100); // 1% fee
+        uint k = etherBalance * tomatoBalance;
+        uint x = etherBalance + _etherAmount;
+        uint y = k / x;
+        require(tomatoBalance > y);
+        uint tmtAmt = tomatoBalance - y;
+        uint expAmt = _etherAmount * tomatoBalance / etherBalance;
+
+        require(10 * (expAmt - tmtAmt) / expAmt < 1, 'swap slippage is more than 10%');
+
+        uint transferAmtAfterFee = tmtAmt - (tmtAmt / 100); // 1% fee
         require(transferAmtAfterFee > 0);
-        require((transferAmtAfterFee / 10) > (tomatoBalance * etherBalance), 'swap slippage is more than 10%');
         
         bool isTomatoTransfered = IERC20(tomatoAddress).transfer(msg.sender, transferAmtAfterFee);
         require(isTomatoTransfered == true, 'swapEthToTomato: tomato transfer transaction unsuccessful');

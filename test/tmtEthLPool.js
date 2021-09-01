@@ -42,11 +42,12 @@ describe("Tomato_Eth_Liquidity_Pool", function() {
         expect(await tomatoIco.phase()).to.deep.equal(2); // OPEN
     });
 
-    it("should have 150000 coins initially", async function() {
+    it("should have 150000 tomato coins in account of lpool", async function() {
         expect(await tomatoCoin.balanceOf(liquidityPool.address)).to.deep.equal('150000');
     });
 
-    it('should allow owner to transfer funds into liquidity contract', async function() {});
+    it('should allow owner to transfer funds into liquidity contract', async function() {
+    });
 
     it("should provide liquidity to pool successfully", async function() {});
 
