@@ -17,6 +17,7 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
     event Contribution(address owner, uint etherAmount);
     event Redeem(address owner, uint noOfTomatoCoins);
     event TomatoSaleStatus(bool status);
+    event WithDrawAmount(address withdrawer, uint amount);
 
     mapping(address => bool) whitelistedAddresses;
     mapping(address => uint) etherContributions;
@@ -62,6 +63,17 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
         tomatoCoin.mint(msg.sender, amount * EXCHANGE_RATE);
 
         emit Redeem(msg.sender, amount * EXCHANGE_RATE);
+    }
+
+    function withdrawAmount(address withdrawer, uint amount) external onlyOwner {
+        require(amount > 0, 'amount must be grater than 0');
+        require(withdrawer != address(0), 'invalid withdrawer address');
+        require(phase == PHASE.OPEN, "can't withdraw. phase is not open");
+
+        (bool success,) = withdrawer.call{ value: amount }("");
+        require(success == true, 'withdraw transaction is not successful');
+
+        emit WithDrawAmount(withdrawer, amount);
     }
 
     function toggleFundRaising() external onlyOwner {
