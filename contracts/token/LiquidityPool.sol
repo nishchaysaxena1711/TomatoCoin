@@ -10,7 +10,7 @@ contract LPToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     event LPMint(address to, uint amount);
     event LPBurn(address from, uint amount);
 
-    string constant LP_OKEN_NAME = "TMT_ETH_TOKEN";
+    string constant LP_TOKEN_NAME = "TMT_ETH_TOKEN";
     string constant LP_TOKEN_SYMBOL = "TET";
     address tomatoLPAddress;
 
@@ -20,7 +20,7 @@ contract LPToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     }
 
     function initialize(address _tomatoLPAddress) public initializer {
-        __ERC20_init(LP_OKEN_NAME, LP_TOKEN_SYMBOL);
+        __ERC20_init(LP_TOKEN_NAME, LP_TOKEN_SYMBOL);
         __Ownable_init();
         tomatoLPAddress = _tomatoLPAddress;
     }
@@ -31,11 +31,15 @@ contract LPToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     }
 
     function mint(address to, uint amount) external onlyTomatoLP {
+        require(amount > 0, 'minting amount should be > 0');
+        require(to != address(0), 'to address should not be 0');
         super._mint(to, amount);
         emit LPMint(to, amount);
     }
 
     function burn(address from, uint amount) external onlyTomatoLP {
+        require(amount > 0, 'burning amount should be > 0');
+        require(from != address(0), 'from address should not be 0');
         require(balanceOf(from) >= amount, 'user does not have enough LPTokens');
         super._burn(from, amount);
         emit LPBurn(from, amount);

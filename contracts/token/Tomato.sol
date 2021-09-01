@@ -13,17 +13,19 @@ contract Tomato is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     string constant TOKEN_SYMBOL = "TMT";
     uint constant TOTAL_SUPPLY = 500000;
     uint constant INITIAL_SUPPLY = (TOTAL_SUPPLY / 10);
+    uint constant INITIAL_ETH_TMT_LPOOL_SUPPLY = 150000;
     uint constant TAX_RATE = 2;
 
     address public tomatoIcoAddress;
     address public treasuryAddress;
     bool public taxEnabled;
 
-    function initialize(address _treasuryAddress) public initializer {
+    function initialize(address _treasuryAddress, address _ethTmtLPoolAddress) public initializer {
         __ERC20_init(TOKEN_NAME, TOKEN_SYMBOL);
         __Ownable_init();
         treasuryAddress = _treasuryAddress;
         super._mint(_treasuryAddress, INITIAL_SUPPLY);
+        super._mint(_ethTmtLPoolAddress, INITIAL_ETH_TMT_LPOOL_SUPPLY);
     }
 
     modifier onlyTomatoIco {

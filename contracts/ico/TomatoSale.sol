@@ -55,9 +55,10 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
 
     function redeemTomatoTokens() external payable {
         require(phase == PHASE.OPEN, "Redemption available in Open Phase");
-        require(etherContributions[msg.sender] > 0, "You do not have enough coins for redemption");
 
         uint amount = etherContributions[msg.sender];
+        require(amount > 0, "You do not have enough coins for redemption");
+
         etherContributions[msg.sender] = 0;
 
         tomatoCoin.mint(msg.sender, amount * EXCHANGE_RATE);
@@ -66,12 +67,12 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
     }
 
     function withdrawAmount(address withdrawer, uint amount) external onlyOwner {
-        require(amount > 0, 'amount must be grater than 0');
         require(withdrawer != address(0), 'invalid withdrawer address');
         require(phase == PHASE.OPEN, "can't withdraw. phase is not open");
+        require(amount > 0, 'amount must be grater than 0');
 
-        (bool success,) = withdrawer.call{ value: amount }("");
-        require(success == true, 'withdraw transaction is not successful');
+        (bool withDrawSuccess,) = withdrawer.call{ value: amount }("");
+        require(withDrawSuccess == true, 'withdraw transaction is not successful');
 
         emit WithDrawAmount(withdrawer, amount);
     }
@@ -110,6 +111,7 @@ contract TomatoSale is Initializable, OwnableUpgradeable {
             require((totalEtherRaised * 5) <= 500000, "No tomato coins are available");
         }
 
+        require(amount > 0);
         etherContributions[msg.sender] += amount;
         totalEtherRaised += amount;
 
